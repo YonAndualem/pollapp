@@ -1,10 +1,42 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, Zap, Shield } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const { user } = useAuth();
+  const [userHasPolls, setUserHasPolls] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUserPolls = async () => {
+      if (user) {
+        try {
+          const res = await fetch("/api/polls", { cache: "no-store" });
+          const j = await res.json();
+          const polls = j?.data ?? [];
+          setUserHasPolls(polls.length > 0);
+        } catch (error) {
+          // Ignore error - this is just for UI text
+        }
+      }
+      setLoading(false);
+    };
+
+    checkUserPolls();
+  }, [user]);
+
+  const getCreateButtonText = () => {
+    if (loading) return "Create Poll";
+    if (!user) return "Create Your First Poll";
+    return userHasPolls ? "Create New Poll" : "Create Your First Poll";
+  };
+
   return (
     <div className="space-y-16">
       {/* Hero Section */}
@@ -24,7 +56,7 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" asChild>
             <Link href="/polls/create">
-              Create Your First Poll
+              {getCreateButtonText()}
             </Link>
           </Button>
           <Button variant="outline" size="lg" asChild>
@@ -121,11 +153,13 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" asChild>
-            <Link href="/auth/register">
-              Sign Up Free
-            </Link>
-          </Button>
+          {!user && (
+            <Button size="lg" asChild>
+              <Link href="/auth/register">
+                Sign Up Free
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="lg" asChild>
             <Link href="/polls">
               Explore Polls

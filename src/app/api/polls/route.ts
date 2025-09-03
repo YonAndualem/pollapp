@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 // GET /api/polls - list polls (public only for anonymous)
 export async function GET() {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
 
     const { data, error } = await supabase
         .from("poll_stats")
@@ -49,7 +49,7 @@ export async function GET() {
 
 // POST /api/polls - create a poll
 export async function POST(req: NextRequest) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

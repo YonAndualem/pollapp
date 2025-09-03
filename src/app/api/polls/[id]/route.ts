@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 // GET /api/polls/[id] - get poll with options and counts
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const pollId = params.id;
 
     const { data: poll, error } = await supabase
@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 // POST /api/polls/[id]/vote - cast a vote
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
 // PATCH /api/polls/[id] - update poll (title, description, visibility, allow_multiple_votes, expires_at) and options
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -96,7 +96,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 // DELETE /api/polls/[id]
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

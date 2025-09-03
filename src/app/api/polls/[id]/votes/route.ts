@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 // GET /api/polls/[id]/votes - get user's votes on this poll
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

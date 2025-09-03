@@ -145,6 +145,7 @@ export default function PollDetailPage() {
     const totalVotes = options.reduce((sum, opt) => sum + opt.votes, 0);
 
     const isOwner = user && authorId === user.id;
+    const isExpired = expiresAt ? new Date(expiresAt) < new Date() : false;
 
     if (loading) {
         return (
@@ -179,9 +180,12 @@ export default function PollDetailPage() {
                                 {isPublic ? "Public" : "Private"}
                             </Badge>
                             {expiresAt && (
-                                <Badge variant="outline" className="flex items-center gap-1">
+                                <Badge 
+                                    variant={isExpired ? "destructive" : "outline"} 
+                                    className="flex items-center gap-1"
+                                >
                                     <Calendar className="h-3 w-3" />
-                                    Expires {new Date(expiresAt).toLocaleString()}
+                                    {isExpired ? "Expired" : `Expires ${new Date(expiresAt).toLocaleString()}`}
                                 </Badge>
                             )}
                         </div>
@@ -210,14 +214,16 @@ export default function PollDetailPage() {
                         {options.map((opt) => {
                             const percentage = totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0;
                             const isSelected = selected.includes(opt.id);
+                            const canVote = !userHasVoted && !isExpired;
 
                             return (
                                 <div key={opt.id} className="relative">
                                     <button
-                                        onClick={() => !userHasVoted && toggleSelect(opt.id)}
-                                        disabled={userHasVoted}
-                                        className={`w-full text-left px-4 py-4 rounded-lg border transition-all relative overflow-hidden ${userHasVoted
-                                                ? "cursor-default"
+                                        onClick={() => canVote && toggleSelect(opt.id)}
+                                        disabled={!canVote}
+                                        className={`w-full text-left px-4 py-4 rounded-lg border transition-all relative overflow-hidden ${
+                                            !canVote
+                                                ? `cursor-default ${isExpired ? 'opacity-60 grayscale' : ''}`
                                                 : isSelected
                                                     ? "border-primary bg-primary/10 hover:bg-primary/15"
                                                     : "border-border hover:bg-muted hover:border-muted-foreground/30"
@@ -233,7 +239,7 @@ export default function PollDetailPage() {
                                         <div className="relative flex items-center justify-between">
                                             <div className="flex items-center space-x-3">
                                                 <span className="font-medium">{opt.text}</span>
-                                                {userHasVoted && (
+                                                {(userHasVoted || isExpired) && (
                                                     <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
                                                         {percentage.toFixed(1)}%
                                                     </span>
@@ -243,7 +249,7 @@ export default function PollDetailPage() {
                                                 <span className="text-muted-foreground text-sm font-medium">
                                                     {opt.votes} {opt.votes === 1 ? 'vote' : 'votes'}
                                                 </span>
-                                                {isSelected && !userHasVoted && (
+                                                {isSelected && canVote && (
                                                     <div className="w-3 h-3 rounded-full bg-primary" />
                                                 )}
                                             </div>
@@ -263,7 +269,11 @@ export default function PollDetailPage() {
 
                     {/* Action buttons */}
                     <div className="flex justify-end gap-2 pt-4">
-                        {userHasVoted ? (
+                        {isExpired ? (
+                            <div className="text-center text-muted-foreground">
+                                This poll has expired. Results are shown above.
+                            </div>
+                        ) : userHasVoted ? (
                             <Button
                                 variant="outline"
                                 onClick={deleteVote}

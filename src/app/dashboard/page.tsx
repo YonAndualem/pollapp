@@ -193,29 +193,54 @@ export default function DashboardPage() {
                             <div className="text-center text-muted-foreground py-12">No polls yet.</div>
                         ) : (
                             <div className="space-y-4">
-                                {polls.map((p) => (
-                                    <div key={p.id} className="flex items-center justify-between border rounded-md p-4">
-                                        <div>
-                                            <div className="font-medium">{p.title}</div>
-                                            <div className="text-sm text-muted-foreground">{p.totalVotes} votes</div>
+                                {polls.map((p) => {
+                                    const isExpired = p.expiresAt ? new Date(p.expiresAt) < new Date() : false;
+                                    const topOption = p.options.reduce((max, opt) => 
+                                        opt.votes > max.votes ? opt : max, 
+                                        p.options[0] || { text: "No options", votes: 0 }
+                                    );
+                                    
+                                    return (
+                                        <div key={p.id} className={`flex items-center justify-between border rounded-md p-4 ${isExpired ? 'bg-muted/50' : ''}`}>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="font-medium">{p.title}</div>
+                                                    {isExpired && (
+                                                        <span className="px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded-full">
+                                                            Expired
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {p.totalVotes} votes
+                                                    {isExpired && p.totalVotes > 0 && (
+                                                        <span className="ml-2">
+                                                            • Top result: "{topOption.text}" ({topOption.votes} votes)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={`/polls/${p.id}`}>
+                                                        <BarChart3 className="h-4 w-4 mr-1" /> 
+                                                        {isExpired ? 'Results' : 'View'}
+                                                    </Link>
+                                                </Button>
+                                                {!isExpired && (
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <Link href={`/polls/${p.id}?edit=1`}>
+                                                            <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                                <Button variant="destructive" size="sm" onClick={() => deletePoll(p.id)} disabled={busyId === p.id}>
+                                                    {busyId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/polls/${p.id}`}>
-                                                    <BarChart3 className="h-4 w-4 mr-1" /> View
-                                                </Link>
-                                            </Button>
-                                            <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/polls/${p.id}/edit`}>
-                                                    <Pencil className="h-4 w-4 mr-1" /> Edit
-                                                </Link>
-                                            </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => deletePoll(p.id)} disabled={busyId === p.id}>
-                                                {busyId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </CardContent>

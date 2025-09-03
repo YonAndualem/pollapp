@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function GET() {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

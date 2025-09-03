@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 // DELETE /api/polls/[id]/vote - delete user's vote on a poll
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { data: userData } = await supabase.auth.getUser();
     const user = userData?.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
