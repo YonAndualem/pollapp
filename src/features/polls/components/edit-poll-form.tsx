@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray, FieldValues } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Loader2, Calendar, Users, Lock, Unlock } from "lucide-react";
+import { Plus, X, Loader2, Calendar, Users, Lock, Unlock, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-interface CreatePollFormData extends FieldValues {
+interface EditPollFormData extends FieldValues {
     title: string;
     description?: string;
     options: string[];
@@ -21,8 +21,14 @@ interface CreatePollFormData extends FieldValues {
     expiresAt?: Date;
 }
 
-export function CreatePollForm() {
+interface EditPollFormProps {
+    pollId: string;
+    onCancel: () => void;
+}
+
+export function EditPollForm({ pollId, onCancel }: EditPollFormProps) {
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingPoll, setIsLoadingPoll] = useState(true);
     const router = useRouter();
 
     const {
@@ -30,8 +36,9 @@ export function CreatePollForm() {
         control,
         handleSubmit,
         watch,
+        setValue,
         formState: { errors },
-    } = useForm<CreatePollFormData>({
+    } = useForm<EditPollFormData>({
         defaultValues: {
             title: "",
             description: "",
@@ -50,7 +57,39 @@ export function CreatePollForm() {
     const isPublic = watch("isPublic") === "true";
     const allowMultipleVotes = watch("allowMultipleVotes") === "true";
 
-    const onSubmit = async (data: CreatePollFormData) => {
+    // Load poll data
+    useEffect(() => {
+        const loadPoll = async () => {
+            setIsLoadingPoll(true);
+            try {
+                const res = await fetch(`/api/polls/${pollId}`, { cache: "no-store" });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || "Failed to load poll");
+
+                const poll = j.data;
+                setValue("title", poll.title);
+                setValue("description", poll.description || "");
+                setValue("isPublic", poll.isPublic ? "true" : "false");
+                setValue("allowMultipleVotes", poll.allowMultipleVotes ? "true" : "false");
+                setValue("options", poll.options.map((o: any) => o.text));
+
+                if (poll.expiresAt) {
+                    const date = new Date(poll.expiresAt);
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    setValue("expiresAt", localDate);
+                }
+            } catch (error) {
+                toast.error("Failed to load poll data", { duration: 5000 });
+                onCancel();
+            } finally {
+                setIsLoadingPoll(false);
+            }
+        };
+
+        loadPoll();
+    }, [pollId, setValue, onCancel]);
+
+    const onSubmit = async (data: EditPollFormData) => {
         setIsLoading(true);
         try {
             // Basic validation
@@ -65,8 +104,8 @@ export function CreatePollForm() {
                 return;
             }
 
-            const res = await fetch("/api/polls", {
-                method: "POST",
+            const res = await fetch(`/api/polls/${pollId}`, {
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     title: data.title,
@@ -80,25 +119,18 @@ export function CreatePollForm() {
             if (!res.ok) {
                 const text = await res.text();
                 const j = (() => { try { return JSON.parse(text); } catch { return {}; } })();
-                const serverMsg = j.error || text || "Failed to create poll";
+                const serverMsg = j.error || text || "Failed to update poll";
                 throw new Error(`${res.status} ${res.statusText}: ${serverMsg}`);
             }
-            const j = await res.json();
-            const id = j?.data?.id as string;
-            if (id) {
-                toast.success("Poll created successfully", { duration: 5000 });
-                router.push(`/polls`);
-            }
+
+            toast.success("Poll updated successfully", { duration: 5000 });
+            onCancel(); // Close edit mode
         } catch (error) {
-            console.error("Create poll error:", error);
-            toast.error(error instanceof Error ? error.message : "Failed to create poll", { duration: 5000 });
+            console.error("Update poll error:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to update poll", { duration: 5000 });
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const onCancel = () => {
-        router.back();
     };
 
     const addOption = () => {
@@ -113,13 +145,21 @@ export function CreatePollForm() {
         }
     };
 
+    if (isLoadingPoll) {
+        return (
+            <div className="py-12 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Create New Poll</CardTitle>
+                    <CardTitle>Edit Poll</CardTitle>
                     <CardDescription>
-                        Create a poll to gather opinions from your community
+                        Update your poll details and options
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -136,9 +176,6 @@ export function CreatePollForm() {
                                 {...register("title")}
                                 disabled={isLoading}
                             />
-                            {errors.title && (
-                                <p className="text-sm text-destructive">{errors.title.message}</p>
-                            )}
                         </div>
 
                         {/* Description */}
@@ -151,9 +188,6 @@ export function CreatePollForm() {
                                 {...register("description")}
                                 disabled={isLoading}
                             />
-                            {errors.description && (
-                                <p className="text-sm text-destructive">{errors.description.message}</p>
-                            )}
                         </div>
 
                         {/* Options */}
@@ -186,11 +220,6 @@ export function CreatePollForm() {
                                                 {...register(`options.${index}` as const)}
                                                 disabled={isLoading}
                                             />
-                                            {errors.options?.[index] && (
-                                                <p className="text-sm text-destructive mt-1">
-                                                    {errors.options[index]?.message}
-                                                </p>
-                                            )}
                                         </div>
                                         {fields.length > 2 && (
                                             <Button
@@ -207,10 +236,6 @@ export function CreatePollForm() {
                                     </div>
                                 ))}
                             </div>
-
-                            {errors.options && (
-                                <p className="text-sm text-destructive">{errors.options.message}</p>
-                            )}
                         </div>
 
                         {/* Settings */}
@@ -332,7 +357,8 @@ export function CreatePollForm() {
                             </Button>
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Create Poll
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Changes
                             </Button>
                         </div>
                     </form>

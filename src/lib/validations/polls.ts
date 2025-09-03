@@ -6,8 +6,8 @@ export const createPollSchema = z.object({
     options: z.array(
         z.string().min(1, "Option cannot be empty").max(100, "Option must be less than 100 characters")
     ).min(2, "At least 2 options are required").max(10, "Maximum 10 options allowed"),
-    isPublic: z.boolean().default(true),
-    allowMultipleVotes: z.boolean().default(false),
+    isPublic: z.string().default("true"),
+    allowMultipleVotes: z.string().default("false"),
     expiresAt: z.date().optional(),
 });
 

@@ -5,15 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Protected, useAuth } from "@/features/auth/context/auth-context";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
-    const { refreshProfile } = useAuth();
+    const { refreshProfile, user } = useAuth();
     const [name, setName] = useState("");
     const [avatarUrl, setAvatarUrl] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    const email = user?.email || "";
+    const initials = (name || email || "?")
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
 
     useEffect(() => {
         const load = async () => {
@@ -51,16 +60,34 @@ export default function SettingsPage() {
     const onSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/profile/upload", { method: "POST", body: fd });
-        const j = await res.json();
-        if (!res.ok) {
-            toast.error(j.error || "Failed to upload avatar", { duration: 5000 });
-            return;
+
+        setSaving(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch("/api/profile/upload", { method: "POST", body: fd });
+            const j = await res.json();
+            if (!res.ok) {
+                toast.error(j.error || "Failed to upload avatar", { duration: 5000 });
+                return;
+            }
+            setAvatarUrl(j.data?.url || "");
+            toast.success("Avatar uploaded", { duration: 5000 });
+
+            // Auto-save the new avatar URL
+            await fetch("/api/profile", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, avatarUrl: j.data?.url || "" }),
+            });
+
+            // Refresh the profile in the auth context
+            await refreshProfile();
+        } catch (error) {
+            toast.error("Failed to upload avatar", { duration: 5000 });
+        } finally {
+            setSaving(false);
         }
-        setAvatarUrl(j.data?.url || "");
-        toast.success("Avatar uploaded", { duration: 5000 });
     };
 
     return (
@@ -78,10 +105,26 @@ export default function SettingsPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="avatar">Avatar</Label>
-                            <Input id="avatar" type="file" accept="image/*" onChange={onSelectFile} disabled={loading || saving} />
-                            {avatarUrl && (
-                                <div className="text-sm text-muted-foreground truncate">{avatarUrl}</div>
-                            )}
+                            <div className="flex items-center space-x-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={avatarUrl} alt={name || email} />
+                                    <AvatarFallback className="text-lg">
+                                        {initials}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <Input
+                                        id="avatar"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={onSelectFile}
+                                        disabled={loading || saving}
+                                    />
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Upload a new avatar image
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <div className="flex justify-end">
                             <Button onClick={save} disabled={saving}>

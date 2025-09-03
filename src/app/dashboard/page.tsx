@@ -206,7 +206,7 @@ export default function DashboardPage() {
                                                 </Link>
                                             </Button>
                                             <Button variant="outline" size="sm" asChild>
-                                                <Link href={`/polls/${p.id}?edit=1`}>
+                                                <Link href={`/polls/${p.id}/edit`}>
                                                     <Pencil className="h-4 w-4 mr-1" /> Edit
                                                 </Link>
                                             </Button>
