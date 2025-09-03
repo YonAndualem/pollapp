@@ -11,9 +11,12 @@ import { registerSchema, type RegisterForm } from "@/lib/validations/auth";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/features/auth/context/auth-context";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function RegisterForm() {
     const { signUpWithEmail } = useAuth();
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +33,11 @@ export function RegisterForm() {
         setIsLoading(true);
         try {
             await signUpWithEmail(data.email, data.password, { name: data.name });
+            toast.success("Account created successfully. Please check your email to verify.", { duration: 5000 });
+            router.push("/auth/login");
         } catch (error) {
             console.error("Registration error:", error);
+            toast.error("Unable to create account.", { duration: 5000 });
         } finally {
             setIsLoading(false);
         }

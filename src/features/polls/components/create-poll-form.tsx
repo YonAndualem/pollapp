@@ -11,10 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { createPollSchema, type CreatePollForm } from "@/lib/validations/polls";
 import { Plus, X, Loader2, Calendar, Users, Lock, Unlock } from "lucide-react";
-import { format } from "date-fns";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function CreatePollForm() {
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     const {
         register,
@@ -45,14 +47,41 @@ export function CreatePollForm() {
     const onSubmit = async (data: CreatePollForm) => {
         setIsLoading(true);
         try {
-            // TODO: Implement poll creation logic
-            console.log("Create poll data:", data);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            const toBool = (v: unknown) => v === true || v === "true";
+            const res = await fetch("/api/polls", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: data.title,
+                    description: data.description || null,
+                    options: data.options.filter(Boolean),
+                    isPublic: toBool(data.isPublic as unknown),
+                    allowMultipleVotes: toBool(data.allowMultipleVotes as unknown),
+                    expiresAt: data.expiresAt ? data.expiresAt.toISOString() : null,
+                }),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                const j = (() => { try { return JSON.parse(text); } catch { return {}; } })();
+                const serverMsg = j.error || text || "Failed to create poll";
+                throw new Error(`${res.status} ${res.statusText}: ${serverMsg}`);
+            }
+            const j = await res.json();
+            const id = j?.data?.id as string;
+            if (id) {
+                toast.success("Poll created successfully", { duration: 5000 });
+                router.push(`/polls`);
+            }
         } catch (error) {
             console.error("Create poll error:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to create poll", { duration: 5000 });
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const onCancel = () => {
+        router.back();
     };
 
     const addOption = () => {
@@ -77,7 +106,14 @@ export function CreatePollForm() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form
+                        onSubmit={handleSubmit(onSubmit, (errs) => {
+                            const first = Object.values(errs)[0] as any;
+                            const msg = first?.message || first?.root?.message || "Please fix the errors and try again.";
+                            toast.error(msg, { duration: 5000 });
+                        })}
+                        className="space-y-6"
+                    >
                         {/* Title */}
                         <div className="space-y-2">
                             <Label htmlFor="title">Poll Title *</Label>
@@ -278,7 +314,7 @@ export function CreatePollForm() {
 
                         {/* Submit */}
                         <div className="flex justify-end space-x-4 pt-4">
-                            <Button type="button" variant="outline" disabled={isLoading}>
+                            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={isLoading}>

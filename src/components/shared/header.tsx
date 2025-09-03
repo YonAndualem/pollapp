@@ -11,17 +11,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User, Settings, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { toast } from "sonner";
 
-interface HeaderProps {
-    user?: {
-        id: string;
-        name: string;
-        email: string;
-        avatar?: string;
+export function Header() {
+    const { user, signOut, profile } = useAuth();
+    const displayName = (profile?.name || (user?.user_metadata?.name as string | undefined)) ?? undefined;
+    const email = profile?.email || user?.email || "";
+    const avatarUrl = profile?.avatarUrl;
+    const initials = (displayName || email || "?")
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            toast.success("Signed out", { duration: 5000 });
+        } catch (e) {
+            toast.error("Failed to sign out", { duration: 5000 });
+        }
     };
-}
-
-export function Header({ user }: HeaderProps) {
     return (
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center justify-between">
@@ -66,9 +78,9 @@ export function Header({ user }: HeaderProps) {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatar} alt={user.name} />
+                                            <AvatarImage src={avatarUrl} alt={displayName || email} />
                                             <AvatarFallback>
-                                                {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                                {initials}
                                             </AvatarFallback>
                                         </Avatar>
                                     </Button>
@@ -76,9 +88,9 @@ export function Header({ user }: HeaderProps) {
                                 <DropdownMenuContent className="w-56" align="end" forceMount>
                                     <div className="flex items-center justify-start gap-2 p-2">
                                         <div className="flex flex-col space-y-1 leading-none">
-                                            <p className="font-medium">{user.name}</p>
+                                            <p className="font-medium">{displayName || "Account"}</p>
                                             <p className="w-[200px] truncate text-sm text-muted-foreground">
-                                                {user.email}
+                                                {email}
                                             </p>
                                         </div>
                                     </div>
@@ -96,7 +108,7 @@ export function Header({ user }: HeaderProps) {
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleLogout}>
                                         <LogOut className="mr-2 h-4 w-4" />
                                         Log out
                                     </DropdownMenuItem>

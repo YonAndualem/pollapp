@@ -7,8 +7,9 @@ import { PollsGrid } from "@/features/polls/components/polls-grid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Poll } from "@/types";
-import { Plus, BarChart3 } from "lucide-react";
+import { Plus, BarChart3, Loader2, Trash2, Pencil } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // Mock data for demonstration
 const mockUserPolls: Poll[] = [
@@ -66,12 +67,30 @@ export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Simulate API call
         const loadUserPolls = async () => {
             setIsLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setPolls(mockUserPolls);
-            setIsLoading(false);
+            try {
+                const res = await fetch("/api/polls", { cache: "no-store" });
+                const j = await res.json();
+                const data = (j?.data ?? []) as any[];
+                const mapped: Poll[] = data.map((p: any) => ({
+                    id: p.id,
+                    title: p.title,
+                    description: p.description,
+                    options: (p.options ?? []).map((o: any) => ({ id: o.id, text: o.text, pollId: p.id, votes: o.votes, voters: [] })),
+                    authorId: p.authorId,
+                    author: { id: p.authorId, email: "", name: "", createdAt: new Date() },
+                    isPublic: p.isPublic,
+                    allowMultipleVotes: p.allowMultipleVotes,
+                    expiresAt: p.expiresAt ? new Date(p.expiresAt) : undefined,
+                    createdAt: new Date(p.createdAt),
+                    updatedAt: new Date(p.createdAt),
+                    totalVotes: p.totalVotes ?? 0,
+                }));
+                setPolls(mapped);
+            } finally {
+                setIsLoading(false);
+            }
         };
 
         loadUserPolls();
@@ -84,6 +103,41 @@ export default function DashboardPage() {
         !poll.expiresAt || new Date(poll.expiresAt) > new Date()
     ).length;
     const totalViews = totalVotes * 2; // Mock calculation
+
+    const [busyId, setBusyId] = useState<string | null>(null);
+
+    const deletePoll = async (id: string) => {
+        setBusyId(id);
+        try {
+            const res = await fetch(`/api/polls/${id}`, { method: "DELETE" });
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || "Failed to delete poll");
+            toast.success("Poll deleted", { duration: 5000 });
+            // reload
+            const res2 = await fetch("/api/polls", { cache: "no-store" });
+            const j2 = await res2.json();
+            const data = (j2?.data ?? []) as any[];
+            const mapped: Poll[] = data.map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                description: p.description,
+                options: (p.options ?? []).map((o: any) => ({ id: o.id, text: o.text, pollId: p.id, votes: o.votes, voters: [] })),
+                authorId: p.authorId,
+                author: { id: p.authorId, email: "", name: "", createdAt: new Date() },
+                isPublic: p.isPublic,
+                allowMultipleVotes: p.allowMultipleVotes,
+                expiresAt: p.expiresAt ? new Date(p.expiresAt) : undefined,
+                createdAt: new Date(p.createdAt),
+                updatedAt: new Date(p.createdAt),
+                totalVotes: p.totalVotes ?? 0,
+            }));
+            setPolls(mapped);
+        } catch (e: any) {
+            toast.error(e.message, { duration: 5000 });
+        } finally {
+            setBusyId(null);
+        }
+    };
 
     return (
         <Protected>
@@ -131,10 +185,39 @@ export default function DashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <PollsGrid
-                            polls={polls}
-                            isLoading={isLoading}
-                        />
+                        {isLoading ? (
+                            <div className="py-12 flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        ) : polls.length === 0 ? (
+                            <div className="text-center text-muted-foreground py-12">No polls yet.</div>
+                        ) : (
+                            <div className="space-y-4">
+                                {polls.map((p) => (
+                                    <div key={p.id} className="flex items-center justify-between border rounded-md p-4">
+                                        <div>
+                                            <div className="font-medium">{p.title}</div>
+                                            <div className="text-sm text-muted-foreground">{p.totalVotes} votes</div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" asChild>
+                                                <Link href={`/polls/${p.id}`}>
+                                                    <BarChart3 className="h-4 w-4 mr-1" /> View
+                                                </Link>
+                                            </Button>
+                                            <Button variant="outline" size="sm" asChild>
+                                                <Link href={`/polls/${p.id}?edit=1`}>
+                                                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                </Link>
+                                            </Button>
+                                            <Button variant="destructive" size="sm" onClick={() => deletePoll(p.id)} disabled={busyId === p.id}>
+                                                {busyId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

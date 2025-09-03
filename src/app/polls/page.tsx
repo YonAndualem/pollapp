@@ -5,56 +5,7 @@ import { PollsGrid } from "@/features/polls/components/polls-grid";
 import { PollFilters, type SortOption, type FilterOption } from "@/features/polls/components/poll-filters";
 import { Poll } from "@/types";
 
-// Mock data for demonstration
-const mockPolls: Poll[] = [
-    {
-        id: "1",
-        title: "What's your favorite programming language?",
-        description: "Help us understand the community's preferences for our next project.",
-        options: [
-            { id: "1-1", text: "TypeScript", pollId: "1", votes: 45, voters: [] },
-            { id: "1-2", text: "Python", pollId: "1", votes: 32, voters: [] },
-            { id: "1-3", text: "Rust", pollId: "1", votes: 28, voters: [] },
-            { id: "1-4", text: "Go", pollId: "1", votes: 15, voters: [] },
-        ],
-        authorId: "user1",
-        author: {
-            id: "user1",
-            name: "John Doe",
-            email: "john@example.com",
-            createdAt: new Date(),
-        },
-        isPublic: true,
-        allowMultipleVotes: false,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        totalVotes: 120,
-    },
-    {
-        id: "2",
-        title: "Best framework for building web apps?",
-        description: "Share your experience with different frameworks.",
-        options: [
-            { id: "2-1", text: "Next.js", pollId: "2", votes: 38, voters: [] },
-            { id: "2-2", text: "React", pollId: "2", votes: 25, voters: [] },
-            { id: "2-3", text: "Vue.js", pollId: "2", votes: 18, voters: [] },
-            { id: "2-4", text: "Svelte", pollId: "2", votes: 12, voters: [] },
-        ],
-        authorId: "user2",
-        author: {
-            id: "user2",
-            name: "Jane Smith",
-            email: "jane@example.com",
-            createdAt: new Date(),
-        },
-        isPublic: true,
-        allowMultipleVotes: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        totalVotes: 93,
-    },
-];
+// Load from API instead of mock
 
 export default function PollsPage() {
     const [polls, setPolls] = useState<Poll[]>([]);
@@ -64,11 +15,26 @@ export default function PollsPage() {
     const [filterBy, setFilterBy] = useState<FilterOption>("all");
 
     useEffect(() => {
-        // Simulate API call
         const loadPolls = async () => {
             setIsLoading(true);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
-            setPolls(mockPolls);
+            const res = await fetch("/api/polls", { cache: "no-store" });
+            const j = await res.json();
+            const data = (j?.data ?? []) as any[];
+            const mapped: Poll[] = data.map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                description: p.description,
+                options: (p.options ?? []).map((o: any) => ({ id: o.id, text: o.text, pollId: p.id, votes: o.votes, voters: [] })),
+                authorId: p.authorId,
+                author: { id: p.authorId, email: "", name: "", createdAt: new Date() },
+                isPublic: p.isPublic,
+                allowMultipleVotes: p.allowMultipleVotes,
+                expiresAt: p.expiresAt ? new Date(p.expiresAt) : undefined,
+                createdAt: new Date(p.createdAt),
+                updatedAt: new Date(p.createdAt),
+                totalVotes: p.totalVotes ?? 0,
+            }));
+            setPolls(mapped);
             setIsLoading(false);
         };
 

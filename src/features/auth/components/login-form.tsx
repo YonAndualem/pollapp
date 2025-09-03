@@ -11,9 +11,12 @@ import { loginSchema, type LoginForm } from "@/lib/validations/auth";
 import { useAuth } from "@/features/auth/context/auth-context";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function LoginForm() {
     const { signInWithEmail } = useAuth();
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -29,8 +32,11 @@ export function LoginForm() {
         setIsLoading(true);
         try {
             await signInWithEmail(data.email, data.password);
+            toast.success("Welcome back!", { duration: 5000 });
+            router.push("/polls");
         } catch (error) {
             console.error("Login error:", error);
+            toast.error("Unable to sign in. Check your credentials.", { duration: 5000 });
         } finally {
             setIsLoading(false);
         }

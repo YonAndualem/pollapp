@@ -23,6 +23,7 @@ Create a `.env.local` at the project root with:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=avatars
 ```
 
 You can find these in your Supabase project settings under API.

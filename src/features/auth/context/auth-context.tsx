@@ -10,6 +10,8 @@ type AuthContextValue = {
     signInWithEmail: (email: string, password: string) => Promise<void>;
     signUpWithEmail: (email: string, password: string, options?: { name?: string }) => Promise<void>;
     signOut: () => Promise<void>;
+    profile: { name?: string; avatarUrl?: string; email?: string } | null;
+    refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -18,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = useMemo(() => createClient(), []);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [profile, setProfile] = useState<{ name?: string; avatarUrl?: string; email?: string } | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -31,6 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
+            if (session?.user) {
+                void refreshProfile();
+            } else {
+                setProfile(null);
+            }
         });
 
         return () => {
@@ -61,7 +69,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
     };
 
-    const value: AuthContextValue = { user, loading, signInWithEmail, signUpWithEmail, signOut };
+    const refreshProfile = async () => {
+        if (!user) {
+            setProfile(null);
+            return;
+        }
+        try {
+            const res = await fetch("/api/profile", { cache: "no-store" });
+            const j = await res.json();
+            if (res.ok) {
+                setProfile({ name: j.data?.name, avatarUrl: j.data?.avatarUrl, email: j.data?.email });
+            }
+        } catch { }
+    };
+
+    useEffect(() => {
+        if (user) void refreshProfile();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
+
+    const value: AuthContextValue = { user, loading, signInWithEmail, signUpWithEmail, signOut, profile, refreshProfile };
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
