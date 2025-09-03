@@ -164,8 +164,8 @@ interface PollCardProps {
 ## Future Enhancements
 
 ### Phase 1: Core Features
-- [ ] User authentication (NextAuth.js)
-- [ ] Database integration (Prisma + PostgreSQL)
+- [x] User authentication (Supabase)
+- [x] Database schema (Supabase Postgres) — see `supabase/schema.sql`
 - [ ] Real-time voting (WebSockets)
 
 ### Phase 2: Advanced Features
