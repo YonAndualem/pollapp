@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loginSchema, type LoginForm } from "@/lib/validations/auth";
+import { useAuth } from "@/features/auth/context/auth-context";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function LoginForm() {
+    const { signInWithEmail } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -26,9 +28,7 @@ export function LoginForm() {
     const onSubmit = async (data: LoginForm) => {
         setIsLoading(true);
         try {
-            // TODO: Implement login logic
-            console.log("Login data:", data);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            await signInWithEmail(data.email, data.password);
         } catch (error) {
             console.error("Login error:", error);
         } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Protected } from "@/features/auth/context/auth-context";
 import { DashboardStats } from "@/features/dashboard/components/dashboard-stats";
 import { PollsGrid } from "@/features/polls/components/polls-grid";
 import { Button } from "@/components/ui/button";
@@ -85,56 +86,58 @@ export default function DashboardPage() {
     const totalViews = totalVotes * 2; // Mock calculation
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">
-                        Manage your polls and track their performance
-                    </p>
-                </div>
-                <Button asChild>
-                    <Link href="/polls/create">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Poll
-                    </Link>
-                </Button>
-            </div>
-
-            {/* Stats */}
-            <DashboardStats
-                totalPolls={totalPolls}
-                totalVotes={totalVotes}
-                activePolls={activePolls}
-                totalViews={totalViews}
-            />
-
-            {/* Recent Polls */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Your Polls</CardTitle>
-                            <CardDescription>
-                                Manage and monitor your created polls
-                            </CardDescription>
-                        </div>
-                        <Button variant="outline" asChild>
-                            <Link href="/polls">
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                View All
-                            </Link>
-                        </Button>
+        <Protected>
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                        <p className="text-muted-foreground">
+                            Manage your polls and track their performance
+                        </p>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    <PollsGrid
-                        polls={polls}
-                        isLoading={isLoading}
-                    />
-                </CardContent>
-            </Card>
-        </div>
+                    <Button asChild>
+                        <Link href="/polls/create">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Poll
+                        </Link>
+                    </Button>
+                </div>
+
+                {/* Stats */}
+                <DashboardStats
+                    totalPolls={totalPolls}
+                    totalVotes={totalVotes}
+                    activePolls={activePolls}
+                    totalViews={totalViews}
+                />
+
+                {/* Recent Polls */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Your Polls</CardTitle>
+                                <CardDescription>
+                                    Manage and monitor your created polls
+                                </CardDescription>
+                            </div>
+                            <Button variant="outline" asChild>
+                                <Link href="/polls">
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    View All
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <PollsGrid
+                            polls={polls}
+                            isLoading={isLoading}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
+        </Protected>
     );
 }

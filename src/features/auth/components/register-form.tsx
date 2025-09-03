@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { registerSchema, type RegisterForm } from "@/lib/validations/auth";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/features/auth/context/auth-context";
 
 export function RegisterForm() {
+    const { signUpWithEmail } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -27,9 +29,7 @@ export function RegisterForm() {
     const onSubmit = async (data: RegisterForm) => {
         setIsLoading(true);
         try {
-            // TODO: Implement registration logic
-            console.log("Register data:", data);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            await signUpWithEmail(data.email, data.password, { name: data.name });
         } catch (error) {
             console.error("Registration error:", error);
         } finally {
