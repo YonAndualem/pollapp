@@ -180,8 +180,8 @@ export default function PollDetailPage() {
                                 {isPublic ? "Public" : "Private"}
                             </Badge>
                             {expiresAt && (
-                                <Badge 
-                                    variant={isExpired ? "destructive" : "outline"} 
+                                <Badge
+                                    variant={isExpired ? "destructive" : "outline"}
                                     className="flex items-center gap-1"
                                 >
                                     <Calendar className="h-3 w-3" />
@@ -221,8 +221,7 @@ export default function PollDetailPage() {
                                     <button
                                         onClick={() => canVote && toggleSelect(opt.id)}
                                         disabled={!canVote}
-                                        className={`w-full text-left px-4 py-4 rounded-lg border transition-all relative overflow-hidden ${
-                                            !canVote
+                                        className={`w-full text-left px-4 py-4 rounded-lg border transition-all relative overflow-hidden ${!canVote
                                                 ? `cursor-default ${isExpired ? 'opacity-60 grayscale' : ''}`
                                                 : isSelected
                                                     ? "border-primary bg-primary/10 hover:bg-primary/15"

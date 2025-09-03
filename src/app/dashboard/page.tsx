@@ -195,11 +195,11 @@ export default function DashboardPage() {
                             <div className="space-y-4">
                                 {polls.map((p) => {
                                     const isExpired = p.expiresAt ? new Date(p.expiresAt) < new Date() : false;
-                                    const topOption = p.options.reduce((max, opt) => 
-                                        opt.votes > max.votes ? opt : max, 
+                                    const topOption = p.options.reduce((max, opt) =>
+                                        opt.votes > max.votes ? opt : max,
                                         p.options[0] || { text: "No options", votes: 0 }
                                     );
-                                    
+
                                     return (
                                         <div key={p.id} className={`flex items-center justify-between border rounded-md p-4 ${isExpired ? 'bg-muted/50' : ''}`}>
                                             <div className="flex-1">
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                                             <div className="flex items-center gap-2">
                                                 <Button variant="outline" size="sm" asChild>
                                                     <Link href={`/polls/${p.id}`}>
-                                                        <BarChart3 className="h-4 w-4 mr-1" /> 
+                                                        <BarChart3 className="h-4 w-4 mr-1" />
                                                         {isExpired ? 'Results' : 'View'}
                                                     </Link>
                                                 </Button>
